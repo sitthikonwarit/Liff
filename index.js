@@ -86,6 +86,22 @@ app.post('/api/liff-verify', async (req, res) => {
     }
 });
 
+app.post('/api/check-line-status', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        
+        const response = await axios.post(GAS_URL, {
+            action: 'check_line_status',
+            userId: userId
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error("Error checking status:", error.message);
+        res.status(500).json({ linked: false });
+    }
+});
+
 app.post('/api/verify-line-user', async (req, res) => {
     try {
         const { userId, displayName, pictureUrl, phone } = req.body;
