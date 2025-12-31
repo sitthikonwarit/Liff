@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ลงทะเบียนสมาชิก</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    #status { margin-top: 20px; font-weight: bold; }
+    img { border-radius: 50%; width: 100px; height: 100px; }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <h3>กำลังเชื่อมต่อ LINE...</h3>
+  </div>
+  <div id="status"></div>
+
+  <script>
+    // *** ใส่ LIFF ID เดิมของคุณ ***
+    const YOUR_LIFF_ID = "2008797986-0wkAxTaV"; 
+
+    window.onload = function() {
+      initializeLiff(YOUR_LIFF_ID);
+    };
+
+    function initializeLiff(liffId) {
+      liff.init({ liffId: liffId })
+        .then(() => {
+          if (!liff.isLoggedIn()) {
+            liff.login();
+          } else {
+            getUserProfile();
+          }
+        })
+        .catch((err) => {
+          document.getElementById('status').innerText = 'Error Init: ' + err;
+        });
+    }
+
+    function getUserProfile() {
+      liff.getProfile()
+        .then(profile => {
+          document.getElementById('content').innerHTML = `
+            <img src="${profile.pictureUrl}">
+            <h3>สวัสดี ${profile.displayName}</h3>
+            <p>กำลังส่งข้อมูล...</p>
+          `;
+          sendDataToBackend(profile);
+        })
+        .catch((err) => {
+          document.getElementById('status').innerText = 'Error Profile: ' + err;
+        });
+    }
+
+    function sendDataToBackend(profile) {
+      // ใช้ fetch ส่งข้อมูลกลับไปที่ index.js ของเรา
+      fetch('/save-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: profile.userId,
+          displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('status').innerText = data.message;
+        document.getElementById('status').style.color = "green";
+        setTimeout(() => liff.closeWindow(), 3000);
+      })
+      .catch((error) => {
+        document.getElementById('status').innerText = 'Error Sending: ' + error;
+        document.getElementById('status').style.color = "red";
+      });
+    }
+  </script>
+</body>
+</html>
