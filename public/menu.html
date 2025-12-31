@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เมนูหอพัก</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Sarabun', sans-serif;
+            margin: 0;
+            padding: 10px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading Overlay */
+        #loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+
+        /* Grid Containers */
+        .menu-container {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .menu-box {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: transform 0.1s;
+            position: relative;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .menu-box:active { transform: scale(0.97); }
+        .menu-box:hover { background-color: #f1f1f1; }
+
+        .icon-label {
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .icon-label span { margin-top: 5px; }
+
+        /* --- GUEST GRID (1 บน 3 ล่าง) --- */
+        .guest-grid {
+            display: grid;
+            grid-template-areas: 
+                "areaA areaA areaA"
+                "areaA areaA areaA"
+                "areaB areaC areaD";
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 2fr 1fr;
+            gap: 10px;
+            height: 100%;
+        }
+        .g-a { grid-area: areaA; background-color: #e3f2fd; color: #0d6efd; font-size: 1.5rem; }
+        .g-b { grid-area: areaB; }
+        .g-c { grid-area: areaC; }
+        .g-d { grid-area: areaD; }
+
+        /* --- MEMBER GRID (3x2) --- */
+        .member-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 10px;
+            height: 100%;
+        }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="loading">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2 text-muted">กำลังโหลดข้อมูล...</p>
+    </div>
+
+    <div id="guest-menu" class="menu-container hidden">
+        <div class="guest-grid">
+            <div class="menu-box g-a" onclick="window.location.href='index.html'"> <div class="icon-label">
+                    <span>🔑<br>เข้าสู่ระบบ / ลงทะเบียน</span>
+                </div>
+            </div>
+            <div class="menu-box g-b" onclick="alert('ฟีเจอร์ดูห้องว่าง (กำลังพัฒนา)')">🏠<br>ดูห้องว่าง</div>
+            <div class="menu-box g-c" onclick="alert('ฟีเจอร์จองห้อง (กำลังพัฒนา)')">📅<br>จองห้อง</div>
+            <div class="menu-box g-d" onclick="alert('ฟีเจอร์ติดต่อ (กำลังพัฒนา)')">📞<br>ติดต่อ</div>
+        </div>
+    </div>
+
+    <div id="member-menu" class="menu-container hidden">
+        <div class="member-grid">
+            <div class="menu-box" onclick="alert('ดูข้อมูลผู้เช่า')">👤<br>ข้อมูลผู้เช่า</div>
+            <div class="menu-box" onclick="alert('ดูบิล')">🧾<br>บิลเดือนนี้</div>
+            <div class="menu-box" onclick="alert('ชำระเงิน')">💸<br>ชำระเงิน</div>
+            <div class="menu-box" onclick="alert('แจ้งซ่อม')">🔧<br>แจ้งซ่อม</div>
+            <div class="menu-box" onclick="alert('ติดต่อ')">💬<br>ติดต่อ</div>
+            <div class="menu-box" onclick="alert('เพิ่มเติม')">☰<br>เพิ่มเติม</div>
+        </div>
+    </div>
+
+    <script>
+        // *** ใส่ LIFF ID ของหน้านี้ (สร้างใหม่ใน LINE Dev) ***
+        const MY_LIFF_ID = "2008797986-U3gdSnzx"; 
+
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                    return;
+                }
+                const profile = await liff.getProfile();
+                checkStatus(profile.userId);
+            } catch (err) {
+                console.error(err);
+                alert("LIFF Init Error: " + err);
+            }
+        }
+
+        async function checkStatus(userId) {
+            try {
+                // ยิงไปเช็คที่ Server Node.js ของคุณ
+                const res = await fetch('/api/check-line-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId })
+                });
+                const data = await res.json();
+
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (data.linked) {
+                    document.getElementById('member-menu').classList.remove('hidden');
+                } else {
+                    document.getElementById('guest-menu').classList.remove('hidden');
+                }
+            } catch (error) {
+                alert("Server Error");
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
