@@ -3,25 +3,36 @@ const bodyParser = require('body-parser');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ตั้งค่าให้รับข้อมูล JSON ได้
 app.use(bodyParser.json());
-app.use(express.static('public')); // ให้เข้าถึงไฟล์ในโฟลเดอร์ public ได้
+app.use(express.static('public'));
 
-// Route หลักสำหรับเทสต์ว่า Server ทำงานไหม
 app.get('/', (req, res) => {
   res.send('Node.js LIFF Server is running!');
 });
 
-// Route สำหรับรับข้อมูลจาก LIFF
-app.post('/save-data', (req, res) => {
+app.post('/save-data', async (req, res) => {
   const userData = req.body;
+  console.log('ได้รับข้อมูลจาก LIFF:', userData.displayName);
+
   
-  console.log('ได้รับข้อมูลลูกค้า:', userData);
-  
-  // *** ตรงนี้คือจุดที่เอาไปบันทึกลง Database หรือ Google Sheets ต่อไป ***
-  // เบื้องต้นให้ส่งกลับไปบอกว่า OK ก่อน
-  
-  res.json({ status: 'success', message: 'บันทึกข้อมูลเรียบร้อย (ดูใน Server Log)' });
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3nT30MC0IrUV00TXPK4DDghX2D3H7uTdYC9vBrJ66ZFfpfq9HgHn4o8ndpwUEiXWq/exec'; 
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData) /
+    });
+
+    const result = await response.json();
+    console.log('บันทึกลง Sheet สำเร็จ:', result);
+
+    res.json({ status: 'success', message: 'บันทึกข้อมูลเรียบร้อยแล้ว!' });
+
+  } catch (error) {
+    console.error('Error saving to sheet:', error);
+    res.json({ status: 'error', message: 'เกิดข้อผิดพลาดในการบันทึก' });
+  }
 });
 
 app.listen(port, () => {
