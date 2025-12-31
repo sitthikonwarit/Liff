@@ -76,6 +76,33 @@ app.post('/api/liff-verify', async (req, res) => {
     }
 });
 
+app.post('/api/verify-line-user', async (req, res) => {
+    try {
+        const { userId, displayName, pictureUrl, phone } = req.body;
+
+        // Validation เบื้องต้น
+        if (!userId || !phone) {
+            return res.status(400).json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' });
+        }
+
+        // ยิงไปหา Google Script
+        const response = await axios.post(GAS_URL, {
+            action: 'verify_and_link', // action ต้องตรงกับใน GAS
+            userId: userId,
+            displayName: displayName,
+            pictureUrl: pictureUrl,
+            phone: phone
+        });
+
+        // ส่งผลลัพธ์จาก Google กลับไปให้หน้าเว็บ LIFF
+        res.json(response.data); 
+        
+    } catch (error) {
+        console.error("Error linking line user:", error.message);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ (Node)' });
+    }
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
