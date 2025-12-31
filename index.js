@@ -1,3 +1,4 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios'); // ใช้ยิงไปหา Google Script
@@ -46,6 +47,32 @@ app.post('/api/save-tenant', async (req, res) => {
     } catch (error) {
         console.error("Error saving tenant:", error.message);
         res.status(500).json({ success: false, message: 'Save failed' });
+    }
+});
+
+app.post('/api/liff-verify', async (req, res) => {
+    try {
+        const { userId, displayName, pictureUrl, phone } = req.body;
+
+        if (!userId || !phone) {
+            return res.status(400).json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' });
+        }
+
+        // ยิงไปหา Google Script
+        const response = await axios.post(GAS_URL, {
+            action: 'verify_and_link',
+            userId: userId,
+            displayName: displayName,
+            pictureUrl: pictureUrl,
+            phone: phone
+        });
+
+        // ส่งผลลัพธ์จาก Google กลับไปให้ Frontend
+        res.json(response.data); 
+        
+    } catch (error) {
+        console.error("Error linking line user:", error.message);
+        res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์' });
     }
 });
 
