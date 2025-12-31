@@ -102,6 +102,22 @@ app.post('/api/check-line-status', async (req, res) => {
     }
 });
 
+const LINE_CHANNEL_ACCESS_TOKEN = '+usRCeB64yU5KUYJg8sXqqdczM0Cas7b/UvNMTpZm/D3yxVQP5q8jD8dI5SiAkFmbuwTHb47ln0Eru34yupwTyLlwpaa8soRqhCXaV7fcUbD6n8Gzi6V1C3Jp3QNg0aacUi9EeQ3kXHzBZ6zQeLj/AdB04t89/1O/w1cDnyilFU='; // อันเดิมกับข้างบน
+const GUEST_MENU_ID = 'richmenu-ab71045aa637fec9929e74eebb3f281c'; // ใส่ ID ที่ได้จากขั้นตอนที่ 1 (Guest)
+const MEMBER_MENU_ID = 'richmenu-c363ce9522a19d1f6234a021a3a5edb5'; // ใส่ ID ที่ได้จากขั้นตอนที่ 1 (Member)
+
+
+async function linkRichMenu(userId, richMenuId) {
+    try {
+        await axios.post(`https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`, {}, {
+            headers: { 'Authorization': `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}` }
+        });
+        console.log(`Switched menu for ${userId} to ${richMenuId}`);
+    } catch (error) {
+        console.error('Error switching rich menu:', error.message);
+    }
+}
+
 app.post('/api/verify-line-user', async (req, res) => {
     try {
         const { userId, displayName, pictureUrl, phone } = req.body;
@@ -110,7 +126,7 @@ app.post('/api/verify-line-user', async (req, res) => {
             return res.status(400).json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' });
         }
 
-        // ยิงไปหา Google Script (เพื่อบันทึกลง Sheet)
+        // 1. บันทึกลง Google Sheet (เหมือนเดิม)
         const response = await axios.post(GAS_URL, {
             action: 'verify_and_link',
             userId: userId,
@@ -119,13 +135,14 @@ app.post('/api/verify-line-user', async (req, res) => {
             phone: phone
         });
 
-        // *** จุดสำคัญ: ถ้าบันทึกสำเร็จ ให้ส่งสัญญาณ Real-time ไปหาหน้า Admin ***
         if (response.data.success) {
+            // *** 2. เพิ่มจุดนี้: ถ้าบันทึกสำเร็จ -> สั่งเปลี่ยน Rich Menu เป็น Member ***
+            await linkRichMenu(userId, MEMBER_MENU_ID);
+
+            // ส่ง Socket แจ้งเตือน Admin (เหมือนเดิม)
             console.log(`User Linked: ${phone} -> Sending signal to Admin...`);
-            
-            // ส่ง event ชื่อ 'server-update-tenant' พร้อมข้อมูลผู้เช่าที่อัปเดตแล้ว
             io.emit('server-update-tenant', {
-                tenantId: response.data.tenant.id, // ต้องแน่ใจว่า GAS ส่ง tenant.id กลับมาด้วย
+                tenantId: response.data.tenant.id, 
                 lineUserId: userId,
                 success: true
             });
