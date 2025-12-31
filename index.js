@@ -9,7 +9,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(express.static('public'));
 
 // *** ใส่ URL Google Script ของคุณที่นี่ ***
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxT7TtEAbXeoGGfPtlAIhhc7jo4B7Vs3xAPv9Lm1lJ7npprUjK28Yfx4kHCUQ4spLhzBA/exec'; // ใส่ URL ของคุณ
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbytkZraVCGLp9yhGZ_lJihpiZyeTKgMLOhOAb5gGUQAI5hOIUUwhAJgC3q5fmo8hP-J4A/exec'; // ใส่ URL ของคุณ
 
 // 1. API สำหรับหน้าเว็บเรียกเช็คเบอร์
 app.post('/api/check-phone', async (req, res) => {
