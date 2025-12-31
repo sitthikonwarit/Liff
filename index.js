@@ -1,44 +1,49 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const axios = require('axios'); // แนะนำให้ลง npm install axios ถ้ายังไม่มี
 const app = express();
-const port = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
-app.use(express.static('public'));
+// เพิ่มขนาด Body ให้รองรับการอัปโหลดไฟล์รูป/PDF
+app.use(bodyParser.json({ limit: '50mb' })); 
 
-app.get('/', (req, res) => {
-  res.send('Node.js LIFF Server is running!');
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxT7TtEAbXeoGGfPtlAIhhc7jo4B7Vs3xAPv9Lm1lJ7npprUjK28Yfx4kHCUQ4spLhzBA/exec'; // ใส่ URL ของคุณ
+
+// 1. API เช็คเบอร์โทร
+app.post('/api/check-phone', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        
+        // ยิงไปถาม Google Script
+        const response = await axios.post(GAS_URL, {
+            action: 'check_phone',
+            phone: phone
+        });
+
+        // ส่งผลลัพธ์กลับไปหน้าเว็บ (true/false)
+        res.json(response.data); 
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Check failed' });
+    }
 });
 
-app.post('/save-data', async (req, res) => {
-  const userData = req.body;
-  console.log('ได้รับข้อมูลจาก LIFF:', userData.displayName);
+// 2. API บันทึกข้อมูล
+app.post('/api/save-tenant', async (req, res) => {
+    try {
+        // รับข้อมูลทั้งหมดจากหน้าเว็บ
+        const allData = req.body; 
 
-  // *** ส่วนที่เพิ่ม: ส่งต่อไป Google Sheet ***
-  
-  // 1. ใส่ลิงก์ Google Script ที่คุณ Copy มาเมื่อกี้ ตรงนี้! 👇
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_0sxwA7pW4wXggQpY7uyNHzOYfb5iJ5szHtSky3Zw1PPdyXktPtlcKI_ewlSCJV4-/exec'; 
+        // ยิงไปสั่ง Google Script ให้บันทึก
+        const response = await axios.post(GAS_URL, {
+            action: 'save_tenant',
+            payload: allData // ส่งข้อมูลก้อนใหญ่ไป
+        });
 
-  try {
-    // 2. ใช้ fetch ยิงข้อมูลไปหา Google
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData) // ส่งข้อมูล user ไป
-    });
+        // ส่งข้อมูลผู้เช่าใหม่ที่ได้จาก Google กลับไปให้หน้าเว็บ (เพื่อทำ DOM Update)
+        res.json(response.data); 
 
-    const result = await response.json();
-    console.log('บันทึกลง Sheet สำเร็จ:', result);
-
-    // 3. ตอบกลับไปหาหน้าเว็บ LIFF ว่าโอเค
-    res.json({ status: 'success', message: 'บันทึกข้อมูลเรียบร้อยแล้ว!' });
-
-  } catch (error) {
-    console.error('Error saving to sheet:', error);
-    res.json({ status: 'error', message: 'เกิดข้อผิดพลาดในการบันทึก' });
-  }
-});
-
-app.listen(port, () => {
-  console.log(`Server running at port ${port}`);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Save failed' });
+    }
 });
