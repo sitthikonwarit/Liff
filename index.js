@@ -4,12 +4,19 @@ const bodyParser = require('body-parser');
 const axios = require('axios'); // ใช้ยิงไปหา Google Script
 const app = express();
 
-// เพิ่มขนาด Body ให้รองรับการอัปโหลดไฟล์รูป/PDF (สำคัญมาก ไม่งั้นส่งรูปไม่ไป)
+const server = http.createServer(app); 
+const io = new Server(server, {
+    cors: {
+        origin: "*", // อนุญาตให้ Google Script เชื่อมต่อเข้ามาได้
+        methods: ["GET", "POST"]
+    }
+});
+
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static('public'));
 
 // *** ใส่ URL Google Script ของคุณที่นี่ ***
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbytkZraVCGLp9yhGZ_lJihpiZyeTKgMLOhOAb5gGUQAI5hOIUUwhAJgC3q5fmo8hP-J4A/exec'; // ใส่ URL ของคุณ
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyy_p_Ap7GmGHcBgH4IcPkBatvkkREERaQ-lCqctY6eW8LIoffY2mvEQib05p6TBK8how/exec'; // ใส่ URL ของคุณ
 
 // 1. API สำหรับหน้าเว็บเรียกเช็คเบอร์
 app.post('/api/check-phone', async (req, res) => {
@@ -80,21 +87,31 @@ app.post('/api/verify-line-user', async (req, res) => {
     try {
         const { userId, displayName, pictureUrl, phone } = req.body;
 
-        // Validation เบื้องต้น
         if (!userId || !phone) {
             return res.status(400).json({ success: false, message: 'ข้อมูลไม่ครบถ้วน' });
         }
 
-        // ยิงไปหา Google Script
+        // ยิงไปหา Google Script (เพื่อบันทึกลง Sheet)
         const response = await axios.post(GAS_URL, {
-            action: 'verify_and_link', // action ต้องตรงกับใน GAS
+            action: 'verify_and_link',
             userId: userId,
             displayName: displayName,
             pictureUrl: pictureUrl,
             phone: phone
         });
 
-        // ส่งผลลัพธ์จาก Google กลับไปให้หน้าเว็บ LIFF
+        // *** จุดสำคัญ: ถ้าบันทึกสำเร็จ ให้ส่งสัญญาณ Real-time ไปหาหน้า Admin ***
+        if (response.data.success) {
+            console.log(`User Linked: ${phone} -> Sending signal to Admin...`);
+            
+            // ส่ง event ชื่อ 'server-update-tenant' พร้อมข้อมูลผู้เช่าที่อัปเดตแล้ว
+            io.emit('server-update-tenant', {
+                tenantId: response.data.tenant.id, // ต้องแน่ใจว่า GAS ส่ง tenant.id กลับมาด้วย
+                lineUserId: userId,
+                success: true
+            });
+        }
+
         res.json(response.data); 
         
     } catch (error) {
@@ -103,7 +120,17 @@ app.post('/api/verify-line-user', async (req, res) => {
     }
 });
 
+// ฟังการเชื่อมต่อ (Log ดูว่ามี Admin เข้ามาไหม)
+io.on('connection', (socket) => {
+    console.log('Admin Dashboard connected via Socket:', socket.id);
+    
+    socket.on('disconnect', () => {
+        console.log('Admin Dashboard disconnected');
+    });
+});
+
+// เปลี่ยนจาก app.listen เป็น server.listen
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
