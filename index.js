@@ -95,6 +95,11 @@ app.post('/api/check-line-status', async (req, res) => {
             userId: userId
         });
 
+        if (response.data.linked) {
+            console.log(`User ${userId} is already linked. Switching to Member Menu...`);
+            await linkRichMenu(userId, MEMBER_MENU_ID);
+        }
+
         res.json(response.data);
     } catch (error) {
         console.error("Error checking status:", error.message);
