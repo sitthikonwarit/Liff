@@ -95,45 +95,39 @@
         }
 
         async function validatePhoneNumberUnique(phoneNumber) {
-            if (!phoneNumber || phoneNumber.length < 9) return;
+                if (!phoneNumber || phoneNumber.length < 9) return;
 
-            const telInput = document.getElementById("tel");
-            telInput.classList.remove('is-valid', 'is-invalid');
+                const telInput = document.getElementById("tel");
+                telInput.classList.remove('is-valid', 'is-invalid');
 
-            try {
-                // ยิงไปหา Node.js (API ที่เราสร้างไว้)
-                const response = await fetch('/api/check-phone', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phoneNumber })
-                });
-                
-                const data = await response.json();
-
-                if (data.isDuplicate) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'เบอร์โทรศัพท์ซ้ำ!',
-                        text: 'เบอร์นี้มีอยู่ในระบบแล้ว โปรดแจ้งแอดมิน',
-                        confirmButtonText: 'ตกลง',
-                        confirmButtonColor: '#ffc107'
+                try {
+                    // ยิงไปหา Node.js (API ที่เราสร้างไว้)
+                    const response = await fetch('/api/check-phone', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: phoneNumber })
                     });
-                    telInput.value = ""; // ลบค่าทิ้ง
-                    telInput.classList.add('is-invalid');
-                } else {
-                    telInput.classList.add('is-valid');
+                    
+                    const data = await response.json();
+
+                    if (data.isDuplicate) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'เบอร์โทรศัพท์ซ้ำ!',
+                            text: 'เบอร์นี้มีอยู่ในระบบแล้ว โปรดแจ้งแอดมิน',
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#ffc107'
+                        });
+                        telInput.value = ""; // ลบค่าทิ้ง
+                        telInput.classList.add('is-invalid');
+                    } else {
+                        telInput.classList.add('is-valid');
+                    }
+                } catch (err) {
+                    console.error("Check phone error:", err);
                 }
-            } catch (err) {
-                console.error("Check phone error:", err);
             }
-        }
     </script>
 </body>
 
 </html>
-
-<div class="col-md-6"><label for="update-lineUserId" class="form-label">Line Connect</label>
-    <div class="input-group"><span class="input-group-text ${tenant.lineUserId ? 'bg-success text-white' : ''}"><i
-                class="fab fa-line"></i></span><input type="text" id="update-lineUserId" class="form-control"
-            value="${tenant.lineUserId || ''}" placeholder="ยังไม่ได้เชื่อมต่อ"></div>
-</div>
