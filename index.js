@@ -1,17 +1,20 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const axios = require('axios'); // ใช้ยิงไปหา Google Script
+const axios = require('axios');
+const http = require('http'); 
+const { Server } = require("socket.io"); 
+
 const app = express();
 
+// สร้าง Server คู่กับ Socket
 const server = http.createServer(app); 
 const io = new Server(server, {
     cors: {
-        origin: "*", // อนุญาตให้ Google Script เชื่อมต่อเข้ามาได้
+        origin: "*", 
         methods: ["GET", "POST"]
     }
 });
-
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static('public'));
 
