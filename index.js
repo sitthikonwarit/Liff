@@ -161,6 +161,24 @@ app.post('/api/verify-line-user', async (req, res) => {
     }
 });
 
+app.post('/api/webhook-bill-updated', (req, res) => {
+    try {
+        const { monthYear, count } = req.body;
+        console.log(`🔔 Received Webhook: Bill Updated for ${monthYear} (${count} items)`);
+
+        // ส่งสัญญาณบอกทุกหน้าจอที่ต่อ Socket อยู่
+        io.emit('server-bill-updated', { 
+            monthYear: monthYear,
+            timestamp: new Date().getTime()
+        });
+
+        res.json({ success: true, message: 'Broadcast sent to clients' });
+    } catch (error) {
+        console.error("Webhook Error:", error.message);
+        res.status(500).json({ success: false });
+    }
+});
+
 // ฟังการเชื่อมต่อ (Log ดูว่ามี Admin เข้ามาไหม)
 io.on('connection', (socket) => {
     console.log('Admin Dashboard connected via Socket:', socket.id);
