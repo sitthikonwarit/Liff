@@ -17,7 +17,7 @@ const io = new Server(server, {
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(express.static('public'));
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwuVXn4oU4Xv6ORTgqa1wCgl7io9LKbkMvV2iYTKsudGOL94RGdAK0wV_l3gUFwAfOzJA/exec'; // ใส่ URL ของคุณ
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzTfOdupFeHIGoDWSTpMF8NBB4lsPXPoCBrggw2nXRYl-sND6-JnZYJwFqDa15UdnE1bA/exec'; // ใส่ URL ของคุณ
 
 app.post('/api/check-phone', async (req, res) => {
     try {
